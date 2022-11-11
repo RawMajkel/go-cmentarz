@@ -1,11 +1,8 @@
 # Obsługa Cmentarza - Interface / Channels
 
-Z wykorzystaniem tytułowych mechanizmów wykonaj następujący program:
+W magazynie znajduje się 100 zniczy oraz 50 wiązanek.
 
-W przycmentarnym sklepiku trzeba obsłużyć sprzedaż zniczy i wiązanek.
-W magazynie znajduje się 100 zniczy [znicz1;znicz2;...,znicz100] oraz 50 wiązanek [wiązanka1;wiązanka2,...,wiązanka50]
-
-Z magazynu znicze i wiązanki pobierają 4 posłańcy: 2 posłańców pobiera tylko znicze i 2 posłańców pobiera tylko wiązanki;
+Rzeczy pobierają 4 posłańcy: 2 posłańców pobiera tylko znicze i 2 posłańców pobiera tylko wiązanki;
 [poslaniecZniczy_1,poslaniecZniczy_2,poslaniecWiazanek_1,poslaniecWiazanek_2];
 
 Każdy posłaniec może jednorazowo pobrać tylko jedną sztukę rzeczy.
