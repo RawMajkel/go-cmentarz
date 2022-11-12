@@ -4,34 +4,24 @@ import (
 	"fmt"
 )
 
+type Znicz string
+type Wiazanka string
+
+type Przedmiot interface {
+	Znicz | Wiazanka
+}
+
 var magazynZnicze chan Znicz
 var magazynWiazanki chan Wiazanka
 var koszZnicze chan Znicz
 var koszWiazanki chan Wiazanka
 
-type Znicz struct {
-	nazwa string
-}
+func StworzMagazyn[T Przedmiot](ilosc int, nazwa string) chan T {
 
-type Wiazanka struct {
-	nazwa string
-}
+	magazyn := make(chan T, ilosc)
 
-func StworzMagazynZniczy(quantity int) chan Znicz {
-	magazyn := make(chan Znicz, quantity)
-
-	for i := 1; i <= quantity; i++ {
-		magazyn <- Znicz{fmt.Sprintf("znicz%d", i)}
-	}
-
-	return magazyn
-}
-
-func StworzMagazynWiazanek(quantity int) chan Wiazanka {
-	magazyn := make(chan Wiazanka, quantity)
-
-	for i := 1; i <= quantity; i++ {
-		magazyn <- Wiazanka{fmt.Sprintf("wiazanka%d", i)}
+	for i := 1; i <= ilosc; i++ {
+		magazyn <- T(fmt.Sprintf("%s%d", nazwa, i))
 	}
 
 	return magazyn
@@ -40,112 +30,77 @@ func StworzMagazynWiazanek(quantity int) chan Wiazanka {
 func PracaPoslancaZniczy(numer int) {
 
 	for len(magazynZnicze) > 0 {
-		produkt := <-magazynZnicze
-		fmt.Printf("poslaniec_zniczy_%d pobral z magazynu: %v \n", numer, produkt)
+		przedmiot := <-magazynZnicze
+		fmt.Printf("poslaniec_zniczy_%d pobral z magazynu: %s\n", numer, przedmiot)
 
 		for {
 			if len(koszZnicze) <= 10 {
-				koszZnicze <- produkt
-				fmt.Printf("poslaniec_zniczy_%d umiescil %v w koszu \n", numer, produkt)
+				koszZnicze <- przedmiot
+				fmt.Printf("poslaniec_zniczy_%d umiescil %s w koszu\n", numer, przedmiot)
 
 				break
-			} else {
-				fmt.Printf("poslaniec_zniczy_%d czeka na wolny kosz \n", numer)
 			}
 		}
 	}
-	fmt.Printf("poslaniec_zniczy_%d zakonczyl prace", numer)
+	fmt.Printf("poslaniec_zniczy_%d zakonczyl prace\n", numer)
 }
 
 func PracaPoslancaWiazanek(numer int) {
 
 	for len(magazynWiazanki) > 0 {
-		produkt := <-magazynWiazanki
-		fmt.Printf("poslaniec_wiazanek_%d pobral z magazynu: %v \n", numer, produkt)
+		przedmiot := <-magazynWiazanki
+		fmt.Printf("poslaniec_wiazanek_%d pobral z magazynu: %s\n", numer, przedmiot)
 
 		for {
 			if len(koszZnicze) <= 10 {
-				koszWiazanki <- produkt
-				fmt.Printf("poslaniec_wiazanek_%d umiescil %v w koszu \n", numer, produkt)
+				koszWiazanki <- przedmiot
+				fmt.Printf("poslaniec_wiazanek_%d umiescil %s w koszu\n", numer, przedmiot)
 
 				break
-			} else {
-				fmt.Printf("poslaniec_wiazanek_%d czeka na wolny kosz \n", numer)
 			}
 		}
 	}
-	fmt.Printf("poslaniec_wiazanek_%d zakonczyl prace", numer)
+	fmt.Printf("poslaniec_wiazanek_%d zakonczyl prace\n", numer)
 }
 
-func PracaBabek() {
+func PracaBabki(numer int) {
 
 	for {
-		for i := 1; i <= 5; i++ {
+		if (len(koszZnicze) >= 2) && (len(koszWiazanki) >= 1) {
 
-			if (len(koszZnicze) >= 2) && (len(koszWiazanki) >= 1) {
+			wiazanka := <-koszWiazanki
+			znicz1 := <-koszZnicze
+			znicz2 := <-koszZnicze
 
-				znicz1 := <-koszZnicze
-				znicz2 := <-koszZnicze
-				wiazanka1 := <-koszWiazanki
-
-				response := fmt.Sprintf("babka_%d pobrala: %v | %v | %v", i, znicz1, znicz2, wiazanka1)
-				fmt.Println(response)
-			}
+			fmt.Printf("babka_%d pobrala %s, %s, %s z kosza\n", numer, wiazanka, znicz1, znicz2)
 		}
 	}
 }
 
 func main() {
 
-	// magazyn
-	magazynZnicze = StworzMagazynZniczy(100)
-	magazynWiazanki = StworzMagazynWiazanek(50)
+	magazynZnicze = StworzMagazyn[Znicz](100, "znicz")
+	magazynWiazanki = StworzMagazyn[Wiazanka](50, "wiazanka")
 
-	// stwórz kosze
 	koszZnicze = make(chan Znicz, 10)
 	koszWiazanki = make(chan Wiazanka, 10)
 
-	for {
-		select {
-		case znicz := <-koszZnicze:
-			{
-				if (len(koszZnicze) >= 2) && (len(koszWiazanki) >= 1) {
-					
-				}
-			}
-		case znicz := <-magazynZnicze:
-			{
-				fmt.Printf("poslaniec_zniczy_1 pobral i zlozyl do kosza %v\n", znicz)
-			}
-		case znicz := <-magazynZnicze:
-			{
-				fmt.Printf("poslaniec_zniczy_2 pobral i zlozyl do kosza %v\n", znicz)
-			}
-		case wiazanka := <-magazynWiazanki:
-			{
-				fmt.Printf("poslaniec_wiazanek_1 pobral i zlozyl do kosza %v\n", wiazanka)
-			}
-		case wiazanka := <-magazynWiazanki:
-			{
-				fmt.Printf("poslaniec_wiazanek_2 pobral i zlozyl do kosza %v\n", wiazanka)
-			}
-		}
+	for i := 1; i <= 2; i++ {
+		go PracaPoslancaZniczy(i)
 	}
 
-	// for i := 1; i <= 2; i++ {
-	// 	go PracaPoslancaZniczy(i)
-	// }
+	for i := 1; i <= 2; i++ {
+		go PracaPoslancaWiazanek(i)
+	}
 
-	// for i := 1; i <= 2; i++ {
-	// 	go PracaPoslancaWiazanek(i)
-	// }
+	for i := 1; i <= 5; i++ {
+		go PracaBabki(i)
+	}
 
-	// go PracaBabek()
-
-	// for {
-	// 	if len(magazynZnicze) == 0 && len(magazynWiazanki) == 0 && len(koszZnicze) == 0 && len(koszWiazanki) == 0 {
-	// 		fmt.Println("KONIEC")
-	// 		break
-	// 	}
-	// }
+	for {
+		if len(magazynZnicze)+len(magazynWiazanki)+len(koszZnicze)+len(koszWiazanki) == 0 {
+			fmt.Println("KONIEC")
+			return
+		}
+	}
 }
