@@ -1,277 +1,151 @@
 package main
 
 import (
-	"container/list"
 	"fmt"
 )
 
-// zmienne globalne
-var m Magazyn
-var kz KoszNaZnicze
-var kw KoszNaWiazanki
-
-func MagazynyIKoszePuste() bool {
-	return m.wiazanki.Len() == 0 && m.znicze.Len() == 0 && kz.znicze.Len() == 0 && kw.wiazanki.Len() == 0
-}
-
-func MoznaPobracWiazanke() bool {
-	return m.wiazanki.Len() > 0 && kw.wiazanki.Len() < 10
-}
-
-func MoznaPobracZnicz() bool {
-	return m.znicze.Len() > 0 && kz.znicze.Len() < 10
-}
-
-func MoznaPobracZKosza() bool {
-	// fmt.Println("kosz na wiazanki:", kw.wiazanki.Len(), "kosz na znicze:", kz.znicze.Len())
-	return kw.wiazanki.Len() >= 1 && kz.znicze.Len() >= 2
-}
-
-type Magazyn struct {
-	znicze   *list.List
-	wiazanki *list.List
-}
-
-func (m *Magazyn) Init() {
-	for i := 1; i <= 100; i++ {
-		m.znicze.PushFront(Znicz{fmt.Sprintf("znicz%d", i)})
-	}
-
-	for i := 1; i <= 50; i++ {
-		m.wiazanki.PushFront(Wiazanka{fmt.Sprintf("wiazanka%d", i)})
-	}
-}
+var magazynZnicze chan Znicz
+var magazynWiazanki chan Wiazanka
+var koszZnicze chan Znicz
+var koszWiazanki chan Wiazanka
 
 type Znicz struct {
 	nazwa string
 }
+
 type Wiazanka struct {
 	nazwa string
 }
 
-type PoslaniecZniczy struct {
-	nazwa string
+func StworzMagazynZniczy(quantity int) chan Znicz {
+	magazyn := make(chan Znicz, quantity)
+
+	for i := 1; i <= quantity; i++ {
+		magazyn <- Znicz{fmt.Sprintf("znicz%d", i)}
+	}
+
+	return magazyn
 }
 
-type PoslaniecWiazanek struct {
-	nazwa string
+func StworzMagazynWiazanek(quantity int) chan Wiazanka {
+	magazyn := make(chan Wiazanka, quantity)
+
+	for i := 1; i <= quantity; i++ {
+		magazyn <- Wiazanka{fmt.Sprintf("wiazanka%d", i)}
+	}
+
+	return magazyn
 }
 
-// type Poslaniec interface {
-// 	PobierzPrzedmiot()
-// }
+func PracaPoslancaZniczy(numer int) {
 
-func (p PoslaniecWiazanek) PobierzPrzedmiot() {
-	wiazanka := m.wiazanki.Back()
+	for len(magazynZnicze) > 0 {
+		produkt := <-magazynZnicze
+		fmt.Printf("poslaniec_zniczy_%d pobral z magazynu: %v \n", numer, produkt)
 
-	m.wiazanki.Remove(wiazanka)
+		for {
+			if len(koszZnicze) <= 10 {
+				koszZnicze <- produkt
+				fmt.Printf("poslaniec_zniczy_%d umiescil %v w koszu \n", numer, produkt)
 
-	fmt.Println(fmt.Sprintf("%v pobiera %v z magazynu (pozostaje %d wiazanek)", p, wiazanka.Value, m.wiazanki.Len()))
+				break
+			} else {
+				fmt.Printf("poslaniec_zniczy_%d czeka na wolny kosz \n", numer)
+			}
+		}
+	}
+	fmt.Printf("poslaniec_zniczy_%d zakonczyl prace", numer)
 }
 
-func (p PoslaniecZniczy) PobierzPrzedmiot() {
-	znicz := m.znicze.Back()
+func PracaPoslancaWiazanek(numer int) {
 
-	m.znicze.Remove(znicz)
-	kz.znicze.PushFront(znicz)
+	for len(magazynWiazanki) > 0 {
+		produkt := <-magazynWiazanki
+		fmt.Printf("poslaniec_wiazanek_%d pobral z magazynu: %v \n", numer, produkt)
 
-	fmt.Println(fmt.Sprintf("%v pobiera %v z magazynu i odkłada do kosza (pozostaje %d zniczy, kosz zawiera %d przedmiotów)", p, znicz.Value, m.znicze.Len(), kz.znicze.Len()))
+		for {
+			if len(koszZnicze) <= 10 {
+				koszWiazanki <- produkt
+				fmt.Printf("poslaniec_wiazanek_%d umiescil %v w koszu \n", numer, produkt)
+
+				break
+			} else {
+				fmt.Printf("poslaniec_wiazanek_%d czeka na wolny kosz \n", numer)
+			}
+		}
+	}
+	fmt.Printf("poslaniec_wiazanek_%d zakonczyl prace", numer)
 }
 
-func PobierzZnicz() *list.Element {
-	znicz := m.znicze.Back()
+func PracaBabek() {
 
-	m.znicze.Remove(znicz)
-	kz.znicze.PushFront(znicz)
+	for {
+		for i := 1; i <= 5; i++ {
 
-	return znicz
-}
+			if (len(koszZnicze) >= 2) && (len(koszWiazanki) >= 1) {
 
-func PobierzWiazanke() *list.Element {
-	wiazanka := m.wiazanki.Back()
+				znicz1 := <-koszZnicze
+				znicz2 := <-koszZnicze
+				wiazanka1 := <-koszWiazanki
 
-	m.wiazanki.Remove(wiazanka)
-	kw.wiazanki.PushFront(wiazanka)
-
-	return wiazanka
-}
-
-type Pobranie struct {
-	wiazanka *list.Element
-	znicz1   *list.Element
-	znicz2   *list.Element
-}
-
-func PobierzZKosza() Pobranie {
-	wiazanka := kw.wiazanki.Back()
-	znicz1 := kz.znicze.Back()
-	znicz2 := kz.znicze.Back()
-
-	kw.wiazanki.Remove(wiazanka)
-	kz.znicze.Remove(znicz1)
-	kz.znicze.Remove(znicz2)
-
-	return Pobranie{wiazanka, znicz1, znicz2}
-}
-
-type KoszNaZnicze struct {
-	znicze *list.List
-}
-
-type KoszNaWiazanki struct {
-	wiazanki *list.List
-}
-
-type Babka struct {
-	nazwa string
+				response := fmt.Sprintf("babka_%d pobrala: %v | %v | %v", i, znicz1, znicz2, wiazanka1)
+				fmt.Println(response)
+			}
+		}
+	}
 }
 
 func main() {
-	// stwórz magazyn
-	m = Magazyn{list.New(), list.New()}
-	m.Init()
 
-	// stwórz posłańców
-	// pz_1 := PoslaniecZniczy{"poslaniecZniczy_1"}
-	// pz_2 := PoslaniecZniczy{"poslaniecZniczy_2"}
-	// pw_1 := PoslaniecWiazanek{"poslaniecWiazanek_1"}
-	// pw_2 := PoslaniecWiazanek{"poslaniecWiazanek_1"}
-	// // pz_1.PobierzPrzedmiot(&m)
-	// // pw_1.PobierzPrzedmiot(&m)
+	// magazyn
+	magazynZnicze = StworzMagazynZniczy(100)
+	magazynWiazanki = StworzMagazynWiazanek(50)
 
-	// // stwórz babki
-	// b1 := Babka{"babka_1"}
-	// b2 := Babka{"babka_2"}
-	// b3 := Babka{"babka_3"}
-	// b4 := Babka{"babka_4"}
-	// b5 := Babka{"babka_5"}
+	// stwórz kosze
+	koszZnicze = make(chan Znicz, 10)
+	koszWiazanki = make(chan Wiazanka, 10)
 
-	// stwórz kosze (zmienne globalne)
-	kz = KoszNaZnicze{list.New()}
-	kw = KoszNaWiazanki{list.New()}
-
-	// for kz.znicze.Len() < 10 {
-	// 	pz_1.PobierzPrzedmiot()
-	// }
-
-	ch_znicze_1 := make(chan *list.Element)
-	ch_znicze_2 := make(chan *list.Element)
-	ch_wiazanki_1 := make(chan *list.Element)
-	ch_wiazanki_2 := make(chan *list.Element)
-
-	ch_babka_1 := make(chan Pobranie)
-	ch_babka_2 := make(chan Pobranie)
-	ch_babka_3 := make(chan Pobranie)
-	ch_babka_4 := make(chan Pobranie)
-	ch_babka_5 := make(chan Pobranie)
-
-	go func() {
-		if MoznaPobracZnicz() {
-			ch_znicze_1 <- PobierzZnicz()
-		}
-	}()
-
-	go func() {
-		if MoznaPobracZnicz() {
-			ch_znicze_2 <- PobierzZnicz()
-		}
-	}()
-
-	go func() {
-		if MoznaPobracWiazanke() {
-			ch_wiazanki_1 <- PobierzWiazanke()
-		}
-	}()
-
-	go func() {
-		if MoznaPobracWiazanke() {
-			ch_wiazanki_2 <- PobierzWiazanke()
-		}
-	}()
-
-	go func() {
-		if MoznaPobracZKosza() {
-			ch_babka_1 <- PobierzZKosza()
-		}
-	}()
-	go func() {
-		if MoznaPobracZKosza() {
-			ch_babka_2 <- PobierzZKosza()
-		}
-	}()
-	go func() {
-		if MoznaPobracZKosza() {
-			ch_babka_3 <- PobierzZKosza()
-		}
-	}()
-	go func() {
-		if MoznaPobracZKosza() {
-			ch_babka_4 <- PobierzZKosza()
-		}
-	}()
-	go func() {
-		if MoznaPobracZKosza() {
-			ch_babka_5 <- PobierzZKosza()
-		}
-	}()
-
-	// główna pętla
-	for !MagazynyIKoszePuste() {
+	for {
 		select {
-		//babka 1
-		case rec5 := <-ch_babka_1:
-			fmt.Println(fmt.Sprintf("babka_1 pobiera i sprzedaje %v, %v i %v", rec5.wiazanka, rec5.znicz1, rec5.znicz2))
-		//babka 2
-		case rec6 := <-ch_babka_2:
-			fmt.Println(fmt.Sprintf("babka_2 pobiera i sprzedaje %v, %v i %v", rec6.wiazanka, rec6.znicz1, rec6.znicz2))
-		//babka 3
-		case rec7 := <-ch_babka_3:
-			fmt.Println(fmt.Sprintf("babka_3 pobiera i sprzedaje %v, %v i %v", rec7.wiazanka, rec7.znicz1, rec7.znicz2))
-		//babka 4
-		case rec8 := <-ch_babka_4:
-			fmt.Println(fmt.Sprintf("babka_4 pobiera i sprzedaje %v, %v i %v", rec8.wiazanka, rec8.znicz1, rec8.znicz2))
-		//babka 5
-		case rec9 := <-ch_babka_5:
-			fmt.Println(fmt.Sprintf("babka_5 pobiera i sprzedaje %v, %v i %v", rec9.wiazanka, rec9.znicz1, rec9.znicz2))
-		//poslaniec zniczy 1
-		case rec1 := <-ch_znicze_1:
-			fmt.Println(fmt.Sprintf("poslaniec_zniczy_1 pobiera %v i odklada do kosza ()", rec1.Value))
-			// fmt.Println(fmt.Sprintf("Magazyn: %d, Kosz %d", m.znicze.Len(), kz.znicze.Len()))
-		//poslaniec zniczy 2
-		case rec2 := <-ch_znicze_2:
-			fmt.Println(fmt.Sprintf("poslaniec_zniczy_2 pobiera %v i odklada do kosza", rec2.Value))
-			// fmt.Println(fmt.Sprintf("Magazyn: %d, Kosz %d", m.znicze.Len(), kz.znicze.Len()))
-		//poslaniec wiazanek 1
-		case rec3 := <-ch_wiazanki_1:
-			fmt.Println(fmt.Sprintf("poslaniec_wiazanek_1 pobiera %v i odklada do kosza", rec3.Value))
-			// fmt.Println(fmt.Sprintf("Magazyn: %d, Kosz %d", m.wiazanki.Len(), kw.wiazanki.Len()))
-		//poslaniec wiazanek 2
-		case rec4 := <-ch_wiazanki_2:
-			fmt.Println(fmt.Sprintf("poslaniec_wiazanek_2 pobiera %v i odklada do kosza", rec4.Value))
-			// fmt.Println(fmt.Sprintf("Magazyn: %d, Kosz %d", m.wiazanki.Len(), kw.wiazanki.Len()))
-		default:
-			fmt.Println("oczekiwanie")
+		case znicz := <-koszZnicze:
+			{
+				if (len(koszZnicze) >= 2) && (len(koszWiazanki) >= 1) {
+					
+				}
+			}
+		case znicz := <-magazynZnicze:
+			{
+				fmt.Printf("poslaniec_zniczy_1 pobral i zlozyl do kosza %v\n", znicz)
+			}
+		case znicz := <-magazynZnicze:
+			{
+				fmt.Printf("poslaniec_zniczy_2 pobral i zlozyl do kosza %v\n", znicz)
+			}
+		case wiazanka := <-magazynWiazanki:
+			{
+				fmt.Printf("poslaniec_wiazanek_1 pobral i zlozyl do kosza %v\n", wiazanka)
+			}
+		case wiazanka := <-magazynWiazanki:
+			{
+				fmt.Printf("poslaniec_wiazanek_2 pobral i zlozyl do kosza %v\n", wiazanka)
+			}
 		}
 	}
 
-	fmt.Println("Koniec programu - magazyny i kosze puste")
-	fmt.Println("Magazyn - wiązanki", m.wiazanki.Len())
-	fmt.Println("Magazyn - znicze", m.znicze.Len())
-
-	// for m.znicze.Len() > 0 {
-	// 	fmt.Println(fmt.Sprintf("Magazyn zniczy nie jest pusty (%d)", m.znicze.Len()))
-
-	// 	pz_1.PobierzPrzedmiot(&m)
-	// 	time.Sleep(10 * time.Millisecond)
+	// for i := 1; i <= 2; i++ {
+	// 	go PracaPoslancaZniczy(i)
 	// }
 
+	// for i := 1; i <= 2; i++ {
+	// 	go PracaPoslancaWiazanek(i)
+	// }
+
+	// go PracaBabek()
+
 	// for {
-	// 	select {
-	// 	case c <- x:
-	// 		x, y = y, x+y
-	// 	case <-quit:
-	// 		fmt.Println("quit")
-	// 		return
+	// 	if len(magazynZnicze) == 0 && len(magazynWiazanki) == 0 && len(koszZnicze) == 0 && len(koszWiazanki) == 0 {
+	// 		fmt.Println("KONIEC")
+	// 		break
 	// 	}
 	// }
 }
