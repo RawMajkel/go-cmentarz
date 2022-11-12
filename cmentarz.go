@@ -57,10 +57,6 @@ type PoslaniecWiazanek struct {
 	nazwa string
 }
 
-// type Poslaniec interface {
-// 	PobierzPrzedmiot()
-// }
-
 func (p PoslaniecWiazanek) PobierzPrzedmiot() {
 	wiazanka := m.wiazanki.Back()
 
@@ -165,58 +161,79 @@ func main() {
 	ch_babka_4 := make(chan Pobranie)
 	ch_babka_5 := make(chan Pobranie)
 
+	fmt.Printf("Stan magazynu: %d zniczy, %d wiazanek\n", m.znicze.Len(), m.wiazanki.Len())
+	fmt.Printf("Kosze: %d zniczy, %d wiazanek\n", kz.znicze.Len(), kw.wiazanki.Len())
+
 	go func() {
-		if MoznaPobracZnicz() {
-			ch_znicze_1 <- PobierzZnicz()
+		for {
+			if MoznaPobracZnicz() {
+				ch_znicze_1 <- PobierzZnicz()
+			}
 		}
 	}()
 
 	go func() {
-		if MoznaPobracZnicz() {
-			ch_znicze_2 <- PobierzZnicz()
+		for {
+			if MoznaPobracZnicz() {
+				ch_znicze_2 <- PobierzZnicz()
+			}
 		}
 	}()
 
 	go func() {
-		if MoznaPobracWiazanke() {
-			ch_wiazanki_1 <- PobierzWiazanke()
+		for {
+			if MoznaPobracWiazanke() {
+				ch_wiazanki_1 <- PobierzWiazanke()
+			}
 		}
 	}()
 
 	go func() {
-		if MoznaPobracWiazanke() {
-			ch_wiazanki_2 <- PobierzWiazanke()
+		for {
+			if MoznaPobracWiazanke() {
+				ch_wiazanki_2 <- PobierzWiazanke()
+			}
 		}
 	}()
 
 	go func() {
-		if MoznaPobracZKosza() {
-			ch_babka_1 <- PobierzZKosza()
+		for {
+			if MoznaPobracZKosza() {
+				ch_babka_1 <- PobierzZKosza()
+			}
 		}
 	}()
 	go func() {
-		if MoznaPobracZKosza() {
-			ch_babka_2 <- PobierzZKosza()
+		for {
+			if MoznaPobracZKosza() {
+				ch_babka_2 <- PobierzZKosza()
+			}
 		}
 	}()
 	go func() {
-		if MoznaPobracZKosza() {
-			ch_babka_3 <- PobierzZKosza()
+		for {
+			if MoznaPobracZKosza() {
+				ch_babka_3 <- PobierzZKosza()
+			}
 		}
 	}()
 	go func() {
-		if MoznaPobracZKosza() {
-			ch_babka_4 <- PobierzZKosza()
+		for {
+			if MoznaPobracZKosza() {
+				ch_babka_4 <- PobierzZKosza()
+			}
 		}
 	}()
 	go func() {
-		if MoznaPobracZKosza() {
-			ch_babka_5 <- PobierzZKosza()
+		for {
+			if MoznaPobracZKosza() {
+				ch_babka_5 <- PobierzZKosza()
+			}
 		}
 	}()
 
 	// główna pętla
-	for !MagazynyIKoszePuste() {
+	for {
 		select {
 		//babka 1
 		case rec5 := <-ch_babka_1:
@@ -235,7 +252,7 @@ func main() {
 			fmt.Println(fmt.Sprintf("babka_5 pobiera i sprzedaje %v, %v i %v", rec9.wiazanka, rec9.znicz1, rec9.znicz2))
 		//poslaniec zniczy 1
 		case rec1 := <-ch_znicze_1:
-			fmt.Println(fmt.Sprintf("poslaniec_zniczy_1 pobiera %v i odklada do kosza ()", rec1.Value))
+			fmt.Println(fmt.Sprintf("poslaniec_zniczy_1 pobiera %v i odklada do kosza", rec1.Value))
 			// fmt.Println(fmt.Sprintf("Magazyn: %d, Kosz %d", m.znicze.Len(), kz.znicze.Len()))
 		//poslaniec zniczy 2
 		case rec2 := <-ch_znicze_2:
@@ -249,14 +266,10 @@ func main() {
 		case rec4 := <-ch_wiazanki_2:
 			fmt.Println(fmt.Sprintf("poslaniec_wiazanek_2 pobiera %v i odklada do kosza", rec4.Value))
 			// fmt.Println(fmt.Sprintf("Magazyn: %d, Kosz %d", m.wiazanki.Len(), kw.wiazanki.Len()))
-		default:
-			fmt.Println("oczekiwanie")
 		}
 	}
 
 	fmt.Println("Koniec programu - magazyny i kosze puste")
-	fmt.Println("Magazyn - wiązanki", m.wiazanki.Len())
-	fmt.Println("Magazyn - znicze", m.znicze.Len())
 
 	// for m.znicze.Len() > 0 {
 	// 	fmt.Println(fmt.Sprintf("Magazyn zniczy nie jest pusty (%d)", m.znicze.Len()))
