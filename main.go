@@ -31,36 +31,34 @@ func PracaPoslancaZniczy(numer int) {
 
 	for len(magazynZnicze) > 0 {
 		przedmiot := <-magazynZnicze
-		fmt.Printf("poslaniec_zniczy_%d pobral z magazynu: %s\n", numer, przedmiot)
+		fmt.Printf("poslaniecZniczy_%d pobranie: %s\n", numer, przedmiot)
 
 		for {
 			if len(koszZnicze) <= 10 {
 				koszZnicze <- przedmiot
-				fmt.Printf("poslaniec_zniczy_%d umiescil %s w koszu\n", numer, przedmiot)
+				fmt.Printf("poslaniecZniczy_%d skladowanie: %s\n", numer, przedmiot)
 
 				break
 			}
 		}
 	}
-	fmt.Printf("poslaniec_zniczy_%d zakonczyl prace\n", numer)
 }
 
 func PracaPoslancaWiazanek(numer int) {
 
 	for len(magazynWiazanki) > 0 {
 		przedmiot := <-magazynWiazanki
-		fmt.Printf("poslaniec_wiazanek_%d pobral z magazynu: %s\n", numer, przedmiot)
+		fmt.Printf("poslaniecWiazanek_%d pobranie: %s\n", numer, przedmiot)
 
 		for {
 			if len(koszZnicze) <= 10 {
 				koszWiazanki <- przedmiot
-				fmt.Printf("poslaniec_wiazanek_%d umiescil %s w koszu\n", numer, przedmiot)
+				fmt.Printf("poslaniecWiazanek_%d skladowanie: %s\n", numer, przedmiot)
 
 				break
 			}
 		}
 	}
-	fmt.Printf("poslaniec_wiazanek_%d zakonczyl prace\n", numer)
 }
 
 func PracaBabki(numer int) {
@@ -72,7 +70,7 @@ func PracaBabki(numer int) {
 			znicz1 := <-koszZnicze
 			znicz2 := <-koszZnicze
 
-			fmt.Printf("babka_%d pobrala %s, %s, %s z kosza\n", numer, wiazanka, znicz1, znicz2)
+			fmt.Printf("babka_%d: %s, %s, %s\n", numer, wiazanka, znicz1, znicz2)
 		}
 	}
 }
