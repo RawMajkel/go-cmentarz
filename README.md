@@ -1,5 +1,10 @@
 # Obsługa Cmentarza - Interface / Channels
 
+```
+docker build -t go-cmentarz .
+docker run go-cmentarz
+```
+
 W magazynie znajduje się 100 zniczy oraz 50 wiązanek.
 
 Rzeczy pobierają 4 posłańcy: 2 posłańców pobiera tylko znicze i 2 posłańców pobiera tylko wiązanki;
